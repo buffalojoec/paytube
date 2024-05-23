@@ -1,0 +1,15 @@
+[package]
+name = "solana-svm"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+log = "0.4.21"
+solana-measure = { workspace = true }
+solana-metrics = { workspace = true }
+solana-program-runtime = { workspace = true }
+solana-sdk = { workspace = true }
+
+[lib]
+crate-type = ["lib"]
+name = "solana_svm"
