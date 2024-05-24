@@ -62,6 +62,7 @@ use {
     solana_program_runtime::compute_budget::ComputeBudget,
     solana_sdk::{
         feature_set::FeatureSet, fee::FeeStructure, hash::Hash, rent_collector::RentCollector,
+        signature::Keypair,
     },
     solana_svm::{
         transaction_processing_config::{ExecutionRecordingConfig, TransactionProcessingConfig},
@@ -70,12 +71,14 @@ use {
 };
 
 pub struct PayTubeChannel {
+    /// I think you know why this is a bad idea...
+    keys: Vec<Keypair>,
     rpc_client: RpcClient,
 }
 
 impl PayTubeChannel {
-    pub fn new(rpc_client: RpcClient) -> Self {
-        Self { rpc_client }
+    pub fn new(keys: Vec<Keypair>, rpc_client: RpcClient) -> Self {
+        Self { keys, rpc_client }
     }
 
     /// The PayTube API. Processes a batch of PayTube transactions.
@@ -128,9 +131,9 @@ impl PayTubeChannel {
         );
 
         // 3. Convert results into `PayTubeSettler`.
-        let settler = PayTubeSettler::new(transactions, results);
+        let settler = PayTubeSettler::new(&self.rpc_client);
 
         // 4. Submit to Solana network.
-        settler.process_settle();
+        settler.process_settle(transactions, results, &self.keys);
     }
 }

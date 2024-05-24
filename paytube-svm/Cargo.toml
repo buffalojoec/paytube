@@ -9,3 +9,7 @@ solana-client = { workspace = true }
 solana-program-runtime = { workspace = true }
 solana-sdk = { workspace = true }
 solana-svm = { path = "../solana-svm" }
+
+[dev-dependencies]
+solana-logger = { workspace = true }
+solana-test-validator = { workspace = true }
