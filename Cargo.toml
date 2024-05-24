@@ -8,11 +8,13 @@ resolver = "2"
 [workspace.dependencies]
 solana-bpf-loader-program = { git = "https://github.com/anza-xyz/agave.git" }
 solana-client = { git = "https://github.com/anza-xyz/agave.git" }
+solana-logger = { git = "https://github.com/anza-xyz/agave.git" }
 solana-measure = { git = "https://github.com/anza-xyz/agave.git" }
 solana-metrics = { git = "https://github.com/anza-xyz/agave.git" }
 solana-program-runtime = { git = "https://github.com/anza-xyz/agave.git" }
 solana-sdk = { git = "https://github.com/anza-xyz/agave.git" }
 solana-system-program = { git = "https://github.com/anza-xyz/agave.git" }
+solana-test-validator = { git = "https://github.com/anza-xyz/agave.git" }
 
 [patch.crates-io]
 solana-program = { git = "https://github.com/anza-xyz/agave.git" }
