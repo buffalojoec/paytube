@@ -1,47 +1,43 @@
 use {
-    lazy_static::lazy_static,
-    solana_sdk::{account::AccountSharedData, pubkey::Pubkey, system_program},
+    solana_client::rpc_client::RpcClient,
+    solana_sdk::{account::AccountSharedData, pubkey::Pubkey},
     solana_svm::{loader::Loader, transaction_processing_config::TransactionProcessingConfig},
+    std::{collections::HashMap, sync::RwLock},
 };
 
-const ALICE: Pubkey = Pubkey::new_from_array([1; 32]);
-const BOB: Pubkey = Pubkey::new_from_array([2; 32]);
-const WILL: Pubkey = Pubkey::new_from_array([3; 32]);
-
-lazy_static! {
-    pub static ref ACCOUNTS: Vec<(Pubkey, AccountSharedData)> = [
-        (
-            ALICE,
-            AccountSharedData::new(200_000_000, 0, &system_program::id())
-        ),
-        (
-            BOB,
-            AccountSharedData::new(200_000_000, 0, &system_program::id())
-        ),
-        (
-            WILL,
-            AccountSharedData::new(100_000_000, 0, &system_program::id())
-        ),
-    ]
-    .to_vec();
+pub struct PayTubeAccountLoader<'a> {
+    // A simple cache.
+    cache: RwLock<HashMap<Pubkey, AccountSharedData>>,
+    rpc_client: &'a RpcClient,
 }
 
-#[derive(Default)]
-pub struct PayTubeAccountLoader;
+impl<'a> PayTubeAccountLoader<'a> {
+    pub fn new(rpc_client: &'a RpcClient) -> Self {
+        Self {
+            cache: RwLock::new(HashMap::new()),
+            rpc_client,
+        }
+    }
+}
 
-/// SVM implementation of the `Loader` plugin trait.
-impl Loader for PayTubeAccountLoader {
+/// SVM implementation of the `AccountLoader` plugin trait.
+impl Loader for PayTubeAccountLoader<'_> {
     fn load_account(
         &self,
         address: &Pubkey,
         _config: &TransactionProcessingConfig,
     ) -> Option<AccountSharedData> {
-        match *address {
-            ALICE => Some(ACCOUNTS[0].1.clone()),
-            BOB => Some(ACCOUNTS[1].1.clone()),
-            WILL => Some(ACCOUNTS[2].1.clone()),
-            _ => None,
+        if let Some(account) = self.cache.read().unwrap().get(address) {
+            return Some(account.clone());
         }
+
+        let account: AccountSharedData = self.rpc_client.get_account(address).ok()?.into();
+        self.cache
+            .write()
+            .unwrap()
+            .insert(*address, account.clone());
+
+        Some(account)
     }
 
     // If we wanted to, PayTube could override any of the default implementations

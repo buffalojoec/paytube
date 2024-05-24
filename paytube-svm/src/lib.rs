@@ -58,6 +58,7 @@ use {
     crate::{
         loader::PayTubeAccountLoader, settler::PayTubeSettler, transaction::PayTubeTransaction,
     },
+    solana_client::rpc_client::RpcClient,
     solana_program_runtime::compute_budget::ComputeBudget,
     solana_sdk::{
         feature_set::FeatureSet, fee::FeeStructure, hash::Hash, rent_collector::RentCollector,
@@ -68,10 +69,15 @@ use {
     },
 };
 
-#[derive(Default)]
-pub struct PayTubeChannel;
+pub struct PayTubeChannel {
+    rpc_client: RpcClient,
+}
 
 impl PayTubeChannel {
+    pub fn new(rpc_client: RpcClient) -> Self {
+        Self { rpc_client }
+    }
+
     /// The PayTube API. Processes a batch of PayTube transactions.
     ///
     /// Obviously this is a very simple implementation, but one could imagine
@@ -89,7 +95,7 @@ impl PayTubeChannel {
         let rent_collector = RentCollector::default();
 
         // PayTube Loader implementation.
-        let account_loader = PayTubeAccountLoader;
+        let account_loader = PayTubeAccountLoader::new(&self.rpc_client);
 
         // The default PayTube transaction processing config for Solana SVM.
         let processing_config = TransactionProcessingConfig {
