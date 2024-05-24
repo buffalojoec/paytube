@@ -19,3 +19,13 @@ Below is a diagram of the proposed new API, as implemented here in this
 repository under `solana-svm`.
 
 ![v2](./doc/tx_processor_api_v2.jpg)
+
+## Building on Top of Solana SVM
+
+PayTube is a reference implementation designed to showcase how one might use
+the `TransactionBatchProcessor` from `solana-svm` to build an SVM-based
+service.
+
+This particular service is a payment channel.
+
+Read more [in the source](./paytube-svm/src/lib.rs).

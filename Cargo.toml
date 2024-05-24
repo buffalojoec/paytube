@@ -1,10 +1,12 @@
 [workspace]
 members = [
+    "paytube-svm",
     "solana-svm",
 ]
 resolver = "2"
 
 [workspace.dependencies]
+solana-bpf-loader-program = { git = "https://github.com/anza-xyz/agave.git" }
 solana-measure = { git = "https://github.com/anza-xyz/agave.git" }
 solana-metrics = { git = "https://github.com/anza-xyz/agave.git" }
 solana-program-runtime = { git = "https://github.com/anza-xyz/agave.git" }
