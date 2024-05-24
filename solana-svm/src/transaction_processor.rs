@@ -26,7 +26,6 @@ use {
     },
     solana_sdk::{
         account::{AccountSharedData, ReadableAccount, PROGRAM_OWNERS},
-        epoch_schedule::EpochSchedule,
         feature_set::{
             include_loaded_accounts_data_size_in_fee_calculation,
             remove_rounding_in_fee_calculation,
@@ -69,8 +68,6 @@ where
     program_loader: PL,
     /// Required plugin for loading Solana sysvars.
     sysvar_loader: SL,
-    /// Epoch schedule.
-    epoch_schedule: EpochSchedule,
     /// Builtin programs to use in transaction processing.
     builtin_program_ids: HashSet<Pubkey>,
 }
@@ -86,14 +83,12 @@ where
         account_loader: AL,
         program_loader: PL,
         sysvar_loader: SL,
-        epoch_schedule: EpochSchedule,
         builtin_program_ids: HashSet<Pubkey>,
     ) -> Self {
         Self {
             account_loader,
             program_loader,
             sysvar_loader,
-            epoch_schedule,
             builtin_program_ids,
         }
     }
