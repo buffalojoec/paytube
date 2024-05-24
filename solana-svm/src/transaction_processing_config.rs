@@ -29,7 +29,7 @@ pub struct TransactionProcessingConfig<'a> {
     /// Builtin programs to use in transaction processing.
     pub builtin_program_ids: Option<&'a [Pubkey]>,
     /// The compute budget to use.
-    pub compute_budget: &'a ComputeBudget,
+    pub compute_budget: Option<&'a ComputeBudget>,
     /// The feature set to use.
     pub feature_set: &'a FeatureSet,
     /// The fee structure to use.

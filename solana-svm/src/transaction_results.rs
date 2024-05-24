@@ -1,4 +1,5 @@
 use {
+    crate::nonce_info::{NonceFull, NonceInfo},
     solana_sdk::{
         inner_instruction::InnerInstructionsList,
         pubkey::Pubkey,
@@ -45,4 +46,13 @@ pub struct TransactionExecutionDetails {
 pub enum DurableNonceFee {
     Valid(u64),
     Invalid,
+}
+
+impl From<&NonceFull> for DurableNonceFee {
+    fn from(nonce: &NonceFull) -> Self {
+        match nonce.lamports_per_signature() {
+            Some(lamports_per_signature) => Self::Valid(lamports_per_signature),
+            None => Self::Invalid,
+        }
+    }
 }
