@@ -67,6 +67,7 @@ use {
         settler::PayTubeSettler, sysvar_loader::PayTubeSysvarLoader,
         transaction::PayTubeTransaction,
     },
+    solana_client::rpc_client::RpcClient,
     solana_program_runtime::compute_budget::ComputeBudget,
     solana_sdk::{
         feature_set::FeatureSet, fee::FeeStructure, hash::Hash, rent_collector::RentCollector,
@@ -78,12 +79,15 @@ use {
     std::collections::HashSet,
 };
 
-#[derive(Default)]
 pub struct PayTubeChannel {
-    account_loader: PayTubeAccountLoader,
+    rpc_client: RpcClient,
 }
 
 impl PayTubeChannel {
+    pub fn new(rpc_client: RpcClient) -> Self {
+        Self { rpc_client }
+    }
+
     /// The PayTube API. Processes a batch of PayTube transactions.
     ///
     /// Obviously this is a very simple implementation, but one could imagine
@@ -101,13 +105,14 @@ impl PayTubeChannel {
         let rent_collector = RentCollector::default();
 
         // Loaders.
+        let account_loader = PayTubeAccountLoader::new(&self.rpc_client);
         let program_loader =
-            PayTubeProgramLoader::new(&self.account_loader, &compute_budget, &feature_set);
-        let sysvar_loader = PayTubeSysvarLoader::new(&self.account_loader);
+            PayTubeProgramLoader::new(&account_loader, &compute_budget, &feature_set);
+        let sysvar_loader = PayTubeSysvarLoader::new(&account_loader);
 
         // Transaction batch processor.
         let transaction_processor = TransactionBatchProcessor::new(
-            &self.account_loader,
+            &account_loader,
             &program_loader,
             &sysvar_loader,
             HashSet::default(),

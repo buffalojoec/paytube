@@ -18,7 +18,7 @@ use {
 pub struct PayTubeProgramLoader<'a> {
     /// Leverages the account loader to load program account data into an
     /// executable.
-    account_loader: &'a PayTubeAccountLoader,
+    account_loader: &'a PayTubeAccountLoader<'a>,
     compute_budget: &'a ComputeBudget,
     feature_set: &'a FeatureSet,
 }

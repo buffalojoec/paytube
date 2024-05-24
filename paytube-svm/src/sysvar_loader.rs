@@ -6,7 +6,7 @@ use {
 
 pub struct PayTubeSysvarLoader<'a> {
     /// Leverages the account loader to load sysvar data from accounts.
-    account_loader: &'a PayTubeAccountLoader,
+    account_loader: &'a PayTubeAccountLoader<'a>,
 }
 
 impl<'a> PayTubeSysvarLoader<'a> {
