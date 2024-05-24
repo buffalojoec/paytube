@@ -49,3 +49,82 @@
 //! PayTube defines a `PayTubeAccountLoader` that implements the `Loader`
 //! interface, and provides it to the `TransactionBatchProcessor` to process
 //! PayTube transactions.
+
+mod loader;
+mod settler;
+pub mod transaction;
+
+use {
+    crate::{
+        loader::PayTubeAccountLoader, settler::PayTubeSettler, transaction::PayTubeTransaction,
+    },
+    solana_program_runtime::compute_budget::ComputeBudget,
+    solana_sdk::{
+        feature_set::FeatureSet, fee::FeeStructure, hash::Hash, rent_collector::RentCollector,
+    },
+    solana_svm::{
+        transaction_processing_config::{ExecutionRecordingConfig, TransactionProcessingConfig},
+        transaction_processor::TransactionBatchProcessor,
+    },
+};
+
+#[derive(Default)]
+pub struct PayTubeChannel;
+
+impl PayTubeChannel {
+    /// The PayTube API. Processes a batch of PayTube transactions.
+    ///
+    /// Obviously this is a very simple implementation, but one could imagine
+    /// a more complex service that employs custom functionality, such as:
+    ///
+    /// * Increased throughput for individual P2P transfers.
+    /// * Custom Solana transaction ordering (e.g. MEV).
+    ///
+    /// The general scaffold of the PayTube API would remain the same.
+    pub fn process_paytube_transfers(&self, transactions: &[PayTubeTransaction]) {
+        // PayTube default configs.
+        let compute_budget = ComputeBudget::default();
+        let feature_set = FeatureSet::all_enabled();
+        let fee_structure = FeeStructure::default();
+        let rent_collector = RentCollector::default();
+
+        // PayTube Loader implementation.
+        let account_loader = PayTubeAccountLoader;
+
+        // The default PayTube transaction processing config for Solana SVM.
+        let processing_config = TransactionProcessingConfig {
+            account_overrides: None,
+            blockhash: Hash::default(),
+            builtin_program_ids: None,
+            compute_budget: Some(&compute_budget),
+            feature_set: &feature_set,
+            fee_structure: &fee_structure,
+            lamports_per_signature: fee_structure.lamports_per_signature,
+            log_messages_bytes_limit: None,
+            limit_to_load_programs: false,
+            recording_config: ExecutionRecordingConfig {
+                enable_cpi_recording: false,
+                enable_log_recording: false,
+                enable_return_data_recording: false,
+            },
+            rent_collector: &rent_collector,
+            slot: 0,
+        };
+
+        // 1. Convert to a Solana SVM transaction batch.
+        let svm_transactions = PayTubeTransaction::create_svm_transactions(transactions);
+
+        // 2. Process transactions with the Solana SVM.
+        let results = TransactionBatchProcessor::load_and_execute_sanitized_transactions(
+            &svm_transactions,
+            &account_loader,
+            &processing_config,
+        );
+
+        // 3. Convert results into `PayTubeSettler`.
+        let settler = PayTubeSettler::new(transactions, results);
+
+        // 4. Submit to Solana network.
+        settler.process_settle();
+    }
+}
