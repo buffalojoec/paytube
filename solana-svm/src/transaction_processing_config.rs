@@ -27,7 +27,7 @@ pub struct TransactionProcessingConfig<'a> {
     /// The blockhash to use.
     pub blockhash: Hash,
     /// The compute budget to use.
-    pub compute_budget: &'a ComputeBudget,
+    pub compute_budget: Option<&'a ComputeBudget>,
     /// The feature set to use.
     pub feature_set: &'a FeatureSet,
     /// The fee structure to use.

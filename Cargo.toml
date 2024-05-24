@@ -9,3 +9,4 @@ solana-measure = { git = "https://github.com/anza-xyz/agave.git" }
 solana-metrics = { git = "https://github.com/anza-xyz/agave.git" }
 solana-program-runtime = { git = "https://github.com/anza-xyz/agave.git" }
 solana-sdk = { git = "https://github.com/anza-xyz/agave.git" }
+solana-system-program = { git = "https://github.com/anza-xyz/agave.git" }

@@ -2083,9 +2083,25 @@ dependencies = [
 name = "solana-svm"
 version = "0.1.0"
 dependencies = [
+ "bincode",
+ "itertools",
  "log",
  "solana-measure",
  "solana-metrics",
+ "solana-program-runtime",
+ "solana-sdk",
+ "solana-system-program",
+]
+
+[[package]]
+name = "solana-system-program"
+version = "2.0.0"
+source = "git+https://github.com/anza-xyz/agave.git#cd7710ba1abe5a7d5c29ddf16e07e872c354808b"
+dependencies = [
+ "bincode",
+ "log",
+ "serde",
+ "serde_derive",
  "solana-program-runtime",
  "solana-sdk",
 ]
