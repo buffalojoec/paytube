@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "paytube-svm",
     "solana-svm",
 ]
 resolver = "2"
