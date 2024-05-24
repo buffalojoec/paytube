@@ -56,23 +56,23 @@ pub struct LoadAndExecuteSanitizedTransactionsOutput {
 /// The transaction processor.
 ///
 /// A customizable isolated Solana transaction processing unit.
-pub struct TransactionBatchProcessor<AL, PL, SL>
+pub struct TransactionBatchProcessor<'a, AL, PL, SL>
 where
     AL: AccountLoader,
     PL: ProgramLoader,
     SL: SysvarLoader,
 {
     /// Required plugin for loading Solana accounts.
-    account_loader: AL,
+    account_loader: &'a AL,
     /// Required plugin for loading Solana programs.
-    program_loader: PL,
+    program_loader: &'a PL,
     /// Required plugin for loading Solana sysvars.
-    sysvar_loader: SL,
+    sysvar_loader: &'a SL,
     /// Builtin programs to use in transaction processing.
     builtin_program_ids: HashSet<Pubkey>,
 }
 
-impl<AL, PL, SL> TransactionBatchProcessor<AL, PL, SL>
+impl<'a, AL, PL, SL> TransactionBatchProcessor<'a, AL, PL, SL>
 where
     AL: AccountLoader,
     PL: ProgramLoader,
@@ -80,9 +80,9 @@ where
 {
     /// Create a new transaction processor.
     pub fn new(
-        account_loader: AL,
-        program_loader: PL,
-        sysvar_loader: SL,
+        account_loader: &'a AL,
+        program_loader: &'a PL,
+        sysvar_loader: &'a SL,
         builtin_program_ids: HashSet<Pubkey>,
     ) -> Self {
         Self {
