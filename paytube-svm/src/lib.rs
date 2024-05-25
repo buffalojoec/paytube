@@ -55,17 +55,13 @@
 //! `TransactionBatchProcessor` instance in order to leverage the Solana SVM
 //! to process PayTube transactions.
 
-mod account_loader;
-mod program_loader;
+mod loader;
 mod settler;
-mod sysvar_loader;
 pub mod transaction;
 
 use {
     crate::{
-        account_loader::PayTubeAccountLoader, program_loader::PayTubeProgramLoader,
-        settler::PayTubeSettler, sysvar_loader::PayTubeSysvarLoader,
-        transaction::PayTubeTransaction,
+        loader::PayTubeAccountLoader, settler::PayTubeSettler, transaction::PayTubeTransaction,
     },
     solana_client::rpc_client::RpcClient,
     solana_program_runtime::compute_budget::ComputeBudget,
@@ -77,7 +73,6 @@ use {
         transaction_processing_config::{ExecutionRecordingConfig, TransactionProcessingConfig},
         transaction_processor::TransactionBatchProcessor,
     },
-    std::collections::HashSet,
 };
 
 pub struct PayTubeChannel {
@@ -107,24 +102,14 @@ impl PayTubeChannel {
         let fee_structure = FeeStructure::default();
         let rent_collector = RentCollector::default();
 
-        // Loaders.
+        // PayTube Loader implementation.
         let account_loader = PayTubeAccountLoader::new(&self.rpc_client);
-        let program_loader =
-            PayTubeProgramLoader::new(&account_loader, &compute_budget, &feature_set);
-        let sysvar_loader = PayTubeSysvarLoader::new(&account_loader);
-
-        // Transaction batch processor.
-        let transaction_processor = TransactionBatchProcessor::new(
-            &account_loader,
-            &program_loader,
-            &sysvar_loader,
-            HashSet::default(),
-        );
 
         // The default PayTube transaction processing config for Solana SVM.
         let processing_config = TransactionProcessingConfig {
             account_overrides: None,
             blockhash: Hash::default(),
+            builtin_program_ids: None,
             compute_budget: Some(&compute_budget),
             feature_set: &feature_set,
             fee_structure: &fee_structure,
@@ -144,8 +129,11 @@ impl PayTubeChannel {
         let svm_transactions = PayTubeTransaction::create_svm_transactions(transactions);
 
         // 2. Process transactions with the Solana SVM.
-        let results = transaction_processor
-            .load_and_execute_sanitized_transactions(&svm_transactions, &processing_config);
+        let results = TransactionBatchProcessor::load_and_execute_sanitized_transactions(
+            &svm_transactions,
+            &account_loader,
+            &processing_config,
+        );
 
         // 3. Convert results into `PayTubeSettler`.
         let settler = PayTubeSettler::new(&self.rpc_client);

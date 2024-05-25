@@ -7,6 +7,7 @@ edition = "2021"
 bincode = "1.3.3"
 itertools = "0.10.5"
 log = "0.4.21"
+solana-bpf-loader-program = { workspace = true }
 solana-measure = { workspace = true }
 solana-metrics = { workspace = true }
 solana-program-runtime = { workspace = true }

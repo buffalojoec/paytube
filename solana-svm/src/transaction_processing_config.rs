@@ -26,6 +26,8 @@ pub struct TransactionProcessingConfig<'a> {
     pub account_overrides: Option<&'a AccountOverrides>,
     /// The blockhash to use.
     pub blockhash: Hash,
+    /// Builtin programs to use in transaction processing.
+    pub builtin_program_ids: Option<&'a [Pubkey]>,
     /// The compute budget to use.
     pub compute_budget: Option<&'a ComputeBudget>,
     /// The feature set to use.

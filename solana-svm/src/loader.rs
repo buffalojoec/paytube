@@ -7,28 +7,40 @@ use {
         transaction_processing_config::TransactionProcessingConfig,
     },
     itertools::Itertools,
-    solana_program_runtime::compute_budget_processor::process_compute_budget_instructions,
+    solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1,
+    solana_program_runtime::{
+        compute_budget::ComputeBudget,
+        compute_budget_processor::process_compute_budget_instructions,
+        invoke_context::InvokeContext, solana_rbpf::elf::Executable, sysvar_cache::SysvarCache,
+    },
     solana_sdk::{
         account::{Account, AccountSharedData, ReadableAccount, WritableAccount},
-        feature_set,
+        bpf_loader,
+        bpf_loader_upgradeable::{self, get_program_data_address, UpgradeableLoaderState},
+        clock::Clock,
+        epoch_rewards::EpochRewards,
+        epoch_schedule::EpochSchedule,
+        feature_set::{self, FeatureSet},
         message::SanitizedMessage,
         native_loader,
         nonce::State as NonceState,
         pubkey::Pubkey,
-        rent::RentDue,
+        rent::{Rent, RentDue},
         rent_collector::{RentCollector, RENT_EXEMPT_RENT_EPOCH},
         rent_debits::RentDebits,
         saturating_add_assign,
-        sysvar::{self, instructions::construct_instructions_data},
+        slot_hashes::SlotHashes,
+        stake_history::StakeHistory,
+        sysvar::{self, instructions::construct_instructions_data, Sysvar, SysvarId},
         transaction::{self, TransactionError},
         transaction_context::IndexOfAccount,
     },
     solana_system_program::{get_system_account_kind, SystemAccountKind},
-    std::{collections::HashSet, num::NonZeroUsize},
+    std::{collections::HashSet, num::NonZeroUsize, sync::Arc},
 };
 
-/// Required plugin for loading Solana accounts.
-pub trait AccountLoader {
+/// Required plugin for loading Solana accounts, programs, and sysvars.
+pub trait Loader {
     /// Load the account at the provided address.
     fn load_account(&self, address: &Pubkey) -> Option<AccountSharedData>;
 
@@ -275,6 +287,98 @@ pub trait AccountLoader {
             rent: tx_rent,
             rent_debits,
         })
+    }
+
+    /// Load the executable for the program at the provided program ID.
+    ///
+    /// This function has a default implementation, but projects can override
+    /// it if they want to employ their own program loading mechanism, such as a
+    /// JIT cache.
+    fn load_program(
+        &self,
+        program_id: &Pubkey,
+        feature_set: &FeatureSet,
+    ) -> Option<Executable<InvokeContext<'static>>> {
+        if let Some(program_account) = self.load_account(program_id) {
+            let owner = program_account.owner();
+
+            let program_runtime_environment = create_program_runtime_environment_v1(
+                feature_set,
+                &ComputeBudget::default(),
+                false,
+                false,
+            )
+            .unwrap();
+
+            if bpf_loader::check_id(owner) {
+                let programdata = program_account.data();
+                let executable =
+                    Executable::load(programdata, Arc::new(program_runtime_environment)).unwrap();
+                return Some(executable);
+            }
+
+            if bpf_loader_upgradeable::check_id(owner) {
+                let programdata_address = get_program_data_address(program_id);
+                if let Some(programdata_account) = self.load_account(&programdata_address) {
+                    let programdata = programdata_account
+                        .data()
+                        .get(UpgradeableLoaderState::size_of_programdata_metadata()..)?;
+                    let executable =
+                        Executable::load(programdata, Arc::new(program_runtime_environment))
+                            .unwrap();
+                    return Some(executable);
+                }
+            }
+        }
+        None
+    }
+
+    /// Load the sysvar data for the provided sysvar type.
+    ///
+    /// This function has a default implementation, but projects can override
+    /// it if they want to employ their own sysvar loading mechanism.
+    fn load_sysvar<S: Sysvar + SysvarId>(&self) -> Option<S> {
+        self.load_account(&S::id())
+            .map(|sysvar_account| {
+                let sysvar_data = sysvar_account.data();
+                bincode::deserialize::<S>(sysvar_data).ok()
+            })
+            .unwrap_or(Some(S::default()))
+    }
+
+    /// Vend a Solana program-runtime-compatible `SysvarCache` instance.
+    ///
+    /// This function has a default implementation, but projects can override
+    /// it if they want to employ their own sysvar caching mechanism.
+    fn vend_sysvar_cache(&self) -> SysvarCache {
+        let mut sysvar_cache = SysvarCache::default();
+        sysvar_cache.fill_missing_entries(|sysvar_id, set_sysvar| {
+            if sysvar_id == &Clock::id() {
+                let clock = self.load_sysvar::<Clock>();
+                set_sysvar(&bincode::serialize(&clock).unwrap());
+            }
+            if sysvar_id == &EpochSchedule::id() {
+                let epoch_schedule = self.load_sysvar::<EpochSchedule>();
+                set_sysvar(&bincode::serialize(&epoch_schedule).unwrap());
+            }
+            if sysvar_id == &EpochRewards::id() {
+                let epoch_rewards = self.load_sysvar::<EpochRewards>();
+                set_sysvar(&bincode::serialize(&epoch_rewards).unwrap());
+            }
+            if sysvar_id == &Rent::id() {
+                let rent = self.load_sysvar::<Rent>();
+                set_sysvar(&bincode::serialize(&rent).unwrap());
+            }
+            if sysvar_id == &SlotHashes::id() {
+                let slot_hashes = self.load_sysvar::<SlotHashes>();
+                set_sysvar(&bincode::serialize(&slot_hashes).unwrap());
+            }
+            if sysvar_id == &StakeHistory::id() {
+                let stake_history = self.load_sysvar::<StakeHistory>();
+                set_sysvar(&bincode::serialize(&stake_history).unwrap());
+            }
+        });
+        sysvar_cache
     }
 }
 

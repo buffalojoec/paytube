@@ -5620,6 +5620,7 @@ dependencies = [
  "bincode",
  "itertools 0.10.5",
  "log",
+ "solana-bpf-loader-program",
  "solana-measure",
  "solana-metrics",
  "solana-program-runtime",
