@@ -1,7 +1,6 @@
 [workspace]
 members = [
     "paytube-svm",
-    "solana-svm",
 ]
 resolver = "2"
 
@@ -13,6 +12,7 @@ solana-measure = { git = "https://github.com/anza-xyz/agave.git", ref = "cd7710b
 solana-metrics = { git = "https://github.com/anza-xyz/agave.git", ref = "cd7710ba1abe5a7d5c29ddf16e07e872c354808b" }
 solana-program-runtime = { git = "https://github.com/anza-xyz/agave.git", ref = "cd7710ba1abe5a7d5c29ddf16e07e872c354808b" }
 solana-sdk = { git = "https://github.com/anza-xyz/agave.git", ref = "cd7710ba1abe5a7d5c29ddf16e07e872c354808b" }
+solana-svm = { git = "https://github.com/anza-xyz/agave.git", ref = "cd7710ba1abe5a7d5c29ddf16e07e872c354808b" }
 solana-system-program = { git = "https://github.com/anza-xyz/agave.git", ref = "cd7710ba1abe5a7d5c29ddf16e07e872c354808b" }
 solana-test-validator = { git = "https://github.com/anza-xyz/agave.git", ref = "cd7710ba1abe5a7d5c29ddf16e07e872c354808b" }
 

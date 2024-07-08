@@ -8,7 +8,7 @@ solana-bpf-loader-program = { workspace = true }
 solana-client = { workspace = true }
 solana-program-runtime = { workspace = true }
 solana-sdk = { workspace = true }
-solana-svm = { path = "../solana-svm" }
+solana-svm = { workspace = true }
 
 [dev-dependencies]
 solana-logger = { workspace = true }
