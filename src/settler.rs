@@ -24,18 +24,25 @@ use {
 
 /// The key used for storing ledger entries.
 ///
-/// Comprised of the mint (optional), the sender, then the recipient.
+/// Each entry in the ledger represents the movement of SOL or tokens between
+/// two parties. The two keys of the two parties are stored in a sorted array
+/// of length two, and the value's sign determines the direction of transfer.
+///
+/// This design allows the ledger to combine transfers from a -> b and b -> a
+/// in the same entry, calculating the final delta between two parties.
 #[derive(PartialEq, Eq, Hash)]
 struct LedgerKey {
     mint: Option<Pubkey>,
-    from: Pubkey,
-    to: Pubkey,
+    keys: [Pubkey; 2],
 }
 
 /// A ledger of PayTube transactions, used to deconstruct into base chain
 /// transactions.
+///
+/// The value is stored as a signed `i128`, in order to include a sign but also
+/// provide enough room to store `u64::MAX`.
 struct Ledger {
-    ledger: HashMap<LedgerKey, u64>,
+    ledger: HashMap<LedgerKey, i128>,
 }
 
 impl Ledger {
@@ -43,23 +50,24 @@ impl Ledger {
         paytube_transactions: &[PayTubeTransaction],
         svm_output: LoadAndExecuteSanitizedTransactionsOutput,
     ) -> Self {
-        let mut ledger: HashMap<LedgerKey, u64> = HashMap::new();
+        let mut ledger: HashMap<LedgerKey, i128> = HashMap::new();
         paytube_transactions
             .iter()
             .zip(svm_output.execution_results)
             .for_each(|(transaction, result)| {
                 // Only append to the ledger if the PayTube transaction was
                 // successful.
-                //
-                // TODO: Collapse redundant to -> from -> to movements.
                 if result.was_executed_successfully() {
-                    *ledger
-                        .entry(LedgerKey {
-                            mint: transaction.mint,
-                            from: transaction.from,
-                            to: transaction.to,
-                        })
-                        .or_default() += transaction.amount;
+                    let mint = transaction.mint;
+                    let mut keys = [transaction.from, transaction.to];
+                    keys.sort();
+                    let amount = if keys.iter().position(|k| k.eq(&transaction.from)).unwrap() == 0
+                    {
+                        transaction.amount as i128
+                    } else {
+                        -(transaction.amount as i128)
+                    };
+                    *ledger.entry(LedgerKey { mint, keys }).or_default() += amount;
                 }
             });
         Self { ledger }
@@ -69,21 +77,25 @@ impl Ledger {
         self.ledger
             .iter()
             .map(|(key, amount)| {
-                let LedgerKey { mint, from, to } = key;
-                if let Some(mint) = mint {
-                    let source_pubkey = get_associated_token_address(from, mint);
-                    let destination_pubkey = get_associated_token_address(to, mint);
+                let (from, to, amount) = if *amount < 0 {
+                    (key.keys[1], key.keys[0], (amount * -1) as u64)
+                } else {
+                    (key.keys[0], key.keys[1], *amount as u64)
+                };
+                if let Some(mint) = key.mint {
+                    let source_pubkey = get_associated_token_address(&from, &mint);
+                    let destination_pubkey = get_associated_token_address(&to, &mint);
                     return spl_token::instruction::transfer(
                         &spl_token::id(),
                         &source_pubkey,
                         &destination_pubkey,
-                        from,
+                        &from,
                         &[],
-                        *amount,
+                        amount,
                     )
                     .unwrap();
                 }
-                system_instruction::transfer(from, to, *amount)
+                system_instruction::transfer(&from, &to, amount)
             })
             .collect::<Vec<_>>()
     }
