@@ -1,31 +1,22 @@
 # PayTube
 
-A demonstration of a Solana SVM-based payment channel for SPL tokens.
+A reference implementation of an off-chain [state channel](https://ethereum.org/en/developers/docs/scaling/state-channels/)
+built using [Anza's SVM API](https://www.anza.xyz/blog/anzas-new-svm-api).
 
-The `solana-svm` crate is a reimplemented version of Agave's `solana-svm`
-crate.
+With the release of Agave 2.0, we've decoupled the SVM API from the rest of the
+runtime, which means it can be used outside the validator. This unlocks
+SVM-based solutions such as sidecars, channels, rollups, and more. This project
+demonstrates everything you need to know about boostrapping with this new API.
 
-The `paytube-svm` crate is the PayTube channel itself, leveraging the Solana
-SVM and also providing its own implementations for the SVM API.
+PayTube is a state channel (more specifically a payment channel), designed to
+allow multiple parties to transact amongst each other in SOL or SPL tokens
+off-chain. When the channel is closed, the resulting changes in each user's
+balances are posted to the base chain (Solana).
 
-## Reimplementing Solana SVM
+Although this project is for demonstration purposes, a payment channel similar
+to PayTube could be created that scales to handle massive bandwidth of
+transfers, saving the overhead of posting transactions to the chain for last.
 
-Below is a diagram of the current `solana-svm` crate's
-`TransactionBatchProcessor` API.
+Below is a diagram of the new SVM API.
 
-![v1](./doc/tx_processor_api_v1.jpg)
-
-Below is a diagram of the proposed new API, as implemented here in this
-repository under `solana-svm`.
-
-![v2](./doc/tx_processor_api_v2.jpg)
-
-## Building on Top of Solana SVM
-
-PayTube is a reference implementation designed to showcase how one might use
-the `TransactionBatchProcessor` from `solana-svm` to build an SVM-based
-service.
-
-This particular service is a payment channel.
-
-Read more [in the source](./paytube-svm/src/lib.rs).
+![API](./doc/svm_api.jpg)
