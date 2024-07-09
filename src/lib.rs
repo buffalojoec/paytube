@@ -62,7 +62,7 @@ use {
     crate::{
         loader::PayTubeAccountLoader, settler::PayTubeSettler, transaction::PayTubeTransaction,
     },
-    processor::{get_transaction_batch_processor, get_transaction_check_results},
+    processor::{create_transaction_batch_processor, get_transaction_check_results},
     solana_client::rpc_client::RpcClient,
     solana_compute_budget::compute_budget::ComputeBudget,
     solana_sdk::{
@@ -112,7 +112,8 @@ impl PayTubeChannel {
         let account_loader = PayTubeAccountLoader::new(&self.rpc_client);
 
         // Solana SVM transaction batch processor.
-        let processor = get_transaction_batch_processor(&account_loader);
+        let processor =
+            create_transaction_batch_processor(&account_loader, &feature_set, &compute_budget);
 
         // The PayTube transaction processing runtime environment.
         let processing_environment = TransactionProcessingEnvironment {

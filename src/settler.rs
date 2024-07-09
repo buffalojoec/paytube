@@ -18,6 +18,7 @@ use {
         signer::Signer, system_instruction, transaction::Transaction as SolanaTransaction,
     },
     solana_svm::transaction_processor::LoadAndExecuteSanitizedTransactionsOutput,
+    spl_associated_token_account::get_associated_token_address,
     std::collections::HashMap,
 };
 
@@ -68,11 +69,21 @@ impl Ledger {
         self.ledger
             .iter()
             .map(|(key, amount)| {
-                if let Some(mint) = key.mint {
-                    // Insert SPL token transfer here.
-                    return SolanaInstruction::new_with_bytes(mint, &[], vec![]);
+                let LedgerKey { mint, from, to } = key;
+                if let Some(mint) = mint {
+                    let source_pubkey = get_associated_token_address(from, mint);
+                    let destination_pubkey = get_associated_token_address(to, mint);
+                    return spl_token::instruction::transfer(
+                        &spl_token::id(),
+                        &source_pubkey,
+                        &destination_pubkey,
+                        from,
+                        &[],
+                        *amount,
+                    )
+                    .unwrap();
                 }
-                system_instruction::transfer(&key.from, &key.to, *amount)
+                system_instruction::transfer(from, to, *amount)
             })
             .collect::<Vec<_>>()
     }

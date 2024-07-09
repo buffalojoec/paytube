@@ -1,43 +1,13 @@
+mod setup;
+
 use {
     paytube_svm::{transaction::PayTubeTransaction, PayTubeChannel},
-    solana_sdk::{
-        account::AccountSharedData, epoch_schedule::EpochSchedule, pubkey::Pubkey,
-        signature::Keypair, signer::Signer, system_program,
-    },
-    solana_test_validator::{TestValidator, TestValidatorGenesis},
+    setup::{system_account, TestValidatorContext},
+    solana_sdk::{signature::Keypair, signer::Signer},
 };
 
-const SLOTS_PER_EPOCH: u64 = 50;
-
-struct TestValidatorContext {
-    pub test_validator: TestValidator,
-    pub payer: Keypair,
-}
-
-impl TestValidatorContext {
-    fn start_with_accounts(accounts: Vec<(Pubkey, AccountSharedData)>) -> Self {
-        solana_logger::setup();
-
-        let epoch_schedule = EpochSchedule::custom(SLOTS_PER_EPOCH, SLOTS_PER_EPOCH, false);
-
-        let (test_validator, payer) = TestValidatorGenesis::default()
-            .epoch_schedule(epoch_schedule)
-            .add_accounts(accounts)
-            .start();
-
-        Self {
-            test_validator,
-            payer,
-        }
-    }
-}
-
-fn system_account(lamports: u64) -> AccountSharedData {
-    AccountSharedData::new(lamports, 0, &system_program::id())
-}
-
 #[test]
-fn test_paytube() {
+fn test_native_sol() {
     let alice = Keypair::new();
     let bob = Keypair::new();
     let will = Keypair::new();

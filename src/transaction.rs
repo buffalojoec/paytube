@@ -15,6 +15,7 @@ use {
             SanitizedTransaction as SolanaSanitizedTransaction, Transaction as SolanaTransaction,
         },
     },
+    spl_associated_token_account::get_associated_token_address,
     std::collections::HashSet,
 };
 
@@ -38,8 +39,17 @@ impl From<&PayTubeTransaction> for SolanaInstruction {
             amount,
         } = value;
         if let Some(mint) = mint {
-            // TODO: Insert SPL token transfer here.
-            return SolanaInstruction::new_with_bytes(*mint, &[], vec![]);
+            let source_pubkey = get_associated_token_address(from, mint);
+            let destination_pubkey = get_associated_token_address(to, mint);
+            return spl_token::instruction::transfer(
+                &spl_token::id(),
+                &source_pubkey,
+                &destination_pubkey,
+                from,
+                &[],
+                *amount,
+            )
+            .unwrap();
         }
         system_instruction::transfer(from, to, *amount)
     }
